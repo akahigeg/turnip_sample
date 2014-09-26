@@ -1,0 +1,66 @@
+---
+- hosts: servers
+  sudo: true
+  user: vagrant
+  vars:
+    vagrant_home: "/home/vagrant"
+    rbenv_command: "{{ vagrant_home }}/.rbenv/bin/rbenv"
+  tasks:
+    - name: install packages
+      apt: name={{item}} update_cache=yes
+      with_items:
+        - build-essential
+        - git
+        - git-core
+        - libssl-dev
+        - libqt4-dev
+        - libc6-dev
+        - automake
+        - libtool
+        - libyaml-dev
+        - zlib1g
+        - zlib1g-dev
+        - openssl
+        - libssl-dev
+        - libreadline-dev
+        - libxml2-dev
+        - libxslt1-dev
+        - ncurses-dev
+        - pkg-config
+        - chrpath
+        - libfontconfig1-dev
+        - libxft-dev
+
+    - name: install rbenv
+      git: repo=https://github.com/sstephenson/rbenv.git
+           dest={{ vagrant_home }}/.rbenv
+           version=master
+
+    - name: add rbenv path to bash_profile
+      shell: "echo 'export PATH=\"{{ vagrant_home }}/.rbenv/bin:$PATH\"' > {{ vagrant_home }}/.bash_profile; echo 'eval \"$(rbenv init -)\"' >> {{ vagrant_home }}/.bash_profile;"
+
+    - name: install ruby_build
+      git: repo=https://github.com/sstephenson/ruby-build.git
+           dest={{ vagrant_home }}/.rbenv/plugins/ruby-build
+           version=master
+
+    - name: install ruby 2.1.2
+      shell: "export RBENV_ROOT={{ vagrant_home }}/.rbenv; export PATH=$RBENV_ROOT/bin:$PATH; echo N | rbenv install 2.1.2; rbenv global 2.1.2"
+
+    - name: install bundler
+      shell: /home/vagrant/.rbenv/shims/gem install bundler
+
+    - name: change ~/.rbenv owner to vagrant
+      command: chown vagrant:vagrant -R {{ vagrant_home }}/.rbenv
+
+    - name: checkout phantomjs source
+      git: repo=https://github.com/ariya/phantomjs.git
+           dest={{ vagrant_home }}/phantomjs
+           version=1.9
+
+    - name: install phantomjs
+      shell: "cd {{ vagrant_home }}/phantomjs; echo y |./build.sh"
+
+    - name: make symbolic link for phantomjs
+      file: src=/home/vagrant/phantomjs/bin/phantomjs dest=/usr/bin/phantomjs state=link
+
